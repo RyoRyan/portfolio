@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="サイトの説明">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" href="">
+        <link rel="apple-touch-icon" href="">
+        <link rel="stylesheet" href="https://unpkg.com/ress/dist/ress.min.css">
+        <link rel="stylesheet" href="css/style.css">
+  <title>Fretboard</title>
+  <style>
+    header {
+        height: 80px;
+        
+        margin: auto;
+    }
+    table {
+        border-collapse: collapse;
+        min-height: 300px;
+        width: 80%;
+        margin:0 auto;
+        display: block;
+        text-align: center;
+    }
+    td {
+        border: 1px solid #aaa;
+        padding: 0;
+        height: 20px;
+        width: 60px;
+        font-weight: normal;
+        opacity: 0.1;
+    }
+    .visible {
+        font-weight: bold;
+        opacity: 1;
+    }
+    th {
+        border: none;
+        border-right:double  black 3px;
+        padding: 0;
+        height: 20px;
+        width: 60px;
+    }
+    #fretNum td {
+        border: none;
+        opacity: 1;
+    }
+    form {
+        display: flex;
+    }
+    form label {
+        padding: 5px;
+    }
+  </style>
+</head>
+<body>
+<header>
+    <h1>Fretboard</h1>
+</header>
+
+<table>
+
+    <tbody  id="fretboard">
+        <tr id="fretNum">
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>3</td>
+            <td></td>
+            <td>5</td>
+            <td></td>
+            <td>7</td>
+            <td></td>
+            <td>9</td>
+            <td></td>
+            <td></td>
+            <td>12</td>
+            <td></td>
+            <td></td>
+            <td>15</td>
+        </tr>
+    </tbody>
+</table>
+<form>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="C">C</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="C♯">C♯</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="D">D</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="D♯">D♯</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="E">E</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="F">F</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="F♯">F♯</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="G">G</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="G♯">G♯</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="A">A</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="A♯">A♯</label><br>
+  <label><input type="checkbox" class="notesCheckBox" name="visibleNotes" value="B">B</label><br>
+</form>
+<button onclick="addRow()">Add String</button>
+<button onclick="removeRow()">Remove String</button>
+
+<script>
+    // notes in ♯
+    const notes = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+    // notes in ♭
+    const notesFlat = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
+    let visibleNotes = [];
+
+    // check box作成
+    document.querySelectorAll(".notesCheckBox").forEach(box => {
+        box.addEventListener("change", function () {
+            if (this.checked) {
+                visibleNotes.push(this.value);
+            } else {
+                const index = visibleNotes.indexOf(this.value);
+                if (index !== -1) {
+                    visibleNotes.splice(index, 1);
+                };
+            };
+            // セルの表示をアップデート
+            updateVisibleCellsByList()
+        });
+    });
+
+
+    // 行を追加
+    function addRow(initial_value = "C") {
+        // tbody（id="fretboard")を取得
+        const fretboard = document.getElementById("fretboard");
+        
+        // 新しい行（tr）を作成
+        const row = document.createElement("tr");
+        
+        // 左端のヘッダーセル（th）と、その中に入れるセレクトボックスを作成
+        const header = document.createElement("th");
+        const selector = document.createElement("select");
+        
+        // セレクトボックスにオプションを追加
+        for (const note of notes) {
+            const option = document.createElement("option")
+            option.value = note;
+            option.textContent = note;
+            selector.appendChild(option);
+        }
+        selector.value = initial_value;
+        selector.addEventListener("change", function () {
+            updateRow(this);
+        });
+        header.appendChild(selector);
+        
+        // ヘッダーセルをrowに追加
+        row.appendChild(header);
+
+        // tdを15個追加
+        for (let i=0; i <15; i++){
+            const cell = document.createElement("td");
+            cell.textContent = "*"; 
+            row.appendChild(cell);
+        }
+        const fretNum = document.getElementById("fretNum");
+        fretboard.removeChild(fretNum);
+        // rowをfretboardに追加
+        fretboard.appendChild(row);
+        fretboard.appendChild(fretNum);
+        updateRow(selector);
+
+        
+    }
+
+
+    // rowの音名をアップデート
+    function updateRow(selectElement) {
+        const selected = selectElement.value;
+        const startIndex = notes.indexOf(selected) + 1;
+        const row = selectElement.closest("tr");
+        const cells = row.querySelectorAll("td");
+
+        // スケールを1オクターブ繰り返す
+        const scale = [...notes.slice(startIndex), ...notes.slice(0, startIndex)];
+
+        cells.forEach((cell, i) => {
+            cell.textContent = scale[i % scale.length]; // ループして表示
+        });
+    }
+
+    function updateVisibleCellsByList(allowedValues = visibleNotes) {
+        const cells = document.querySelectorAll("td");
+
+        cells.forEach(cell => {
+        const content = cell.textContent.trim();
+
+        if (allowedValues.includes(content)) {
+            cell.classList.add("visible");
+        } else {
+            cell.classList.remove("visible");
+        }
+    });
+    };
+
+    function removeRow() {
+        const rows = document.querySelectorAll("tr");
+        const row = rows[rows.length - 2];
+        row.remove();
+    }
+
+
+    // 初期設定
+    addRow("E");
+    addRow("B");
+    addRow("G");
+    addRow("D");
+    addRow("A");
+    addRow("E");
+</script>
+
+</body>
+</html>
