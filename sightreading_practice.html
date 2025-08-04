@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>VexFlow 五線譜表示サンプル</title>
+    <!-- VexFlow v5 UMD CDN（グローバルで Vex 変数が使える） -->
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+
+    <style>
+        body { 
+            background: #f9f9f9; 
+        }
+        
+        .container {
+            display: flex;
+            justify-content: center;
+        }
+        button {
+            width: 50px;
+            height: 50px;
+            margin: auto 20px;
+        }
+        #vf { margin: 40px; }
+        header {
+            height: 80px;
+            
+            margin: auto;
+        }
+        table {
+            table-layout: fixed;
+            border-collapse: collapse;
+            min-height: 300px;
+            width: 80%;
+            margin:0 auto;
+            display: block;
+            text-align: center;
+        }
+        td {
+            border: 1px solid #aaa;
+            padding: 0;
+            height: 20px;
+            min-width: 60px;
+            font-weight: normal;
+            opacity: 0;
+        }
+        .visible {
+            font-weight: bold;
+            opacity: 1;
+        }
+        th {
+            border: none;
+            border-right:double  black 3px;
+            padding: 0;
+            height: 20px;
+            width: 60px;
+        }
+        #fretNum td {
+            border: none;
+            opacity: 1;
+        }
+        form {
+            display: flex;
+        }
+        form label {
+            padding: 5px;
+        }
+        #bar {
+        width: 300px;
+        height: 24px;
+        background: #eee;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 20px auto;
+        border: 1px solid #aaa;
+        position: relative;
+        }
+        #fill {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #44c, #6cf);
+        transition: width 0s;
+        border-radius: 12px 0 0 12px;
+        }
+        #percent {
+        position: absolute;
+        left: 0; top: 0; width: 100%; height: 100%;
+        text-align: center; line-height: 24px; font-family: monospace;
+        font-size: 15px; color: #222;
+        pointer-events: none;
+        }
+    </style>
+    </head>
+
+
+    <body>
+    <div class="container">
+        <div id="output"></div>
+        <button onclick="quiz()">Button</button>
+    </div>
+    <div id="bar">
+        <div id="fill"></div>
+        
+        <div id="percent">0%</div>
+        
+        </div>
+    <table>
+        <tbody id="fretboard">
+            <tr id="fretNum">
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>3</td>
+                <td></td>
+                <td>5</td>
+                <td></td>
+                <td>7</td>
+                <td></td>
+                <td>9</td>
+                <td></td>
+                <td></td>
+                <td>12</td>
+                <td></td>
+                <td></td>
+                <td>15</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    
+    
+    
+    <script>
+        const { Renderer, Stave, Accidental, StaveNote, Voice, Formatter } = Vex.Flow;
+
+        // hold the current note (midi number)
+        let currentNote = 0;
+
+        // create SVG renderer and attach it to the div "output" while resetting it
+        const div = document.getElementById("output");
+        
+        const renderer = new Renderer(div, Renderer.Backends.SVG)
+        
+        // configure the rendering context
+        renderer.resize(200, 200);
+        const context = renderer.getContext();
+
+        // create a stave of w = 400 at x = 10, y = 40 on the canvas
+        const stave = new Stave(10, 40, 400);
+        stave.addClef("treble");
+        stave.setContext(context).draw();
+
+    function updateStave() {
+        div.innerHTML = '';
+        const renderer = new Renderer(div, Renderer.Backends.SVG)
+        
+        // configure the rendering context
+        renderer.resize(200, 200);
+        const context = renderer.getContext();
+
+        // create a stave of w = 400 at x = 10, y = 40 on the canvas
+        const stave = new Stave(10, 40, 400);
+        stave.addClef("treble");
+        stave.setContext(context).draw();
+        
+        // pick random new note
+        let newNote;
+        do {
+            newNote = randomInt(52, 80);
+        } while (currentNote == newNote)
+        currentNote = newNote;
+        console.log(newNote);  
+        
+
+        // add note
+        const staveNote =  midiNoteToStaveNote(newNote);
+        const voice = new Voice({num_beats: 4, beat_value:4 });
+        voice.addTickable(staveNote);
+        new Formatter().joinVoices([voice]).format([voice], 350);
+
+        voice.draw(context, stave);
+
+
+        }
+
+    function midiNoteToName(n) {
+    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const name = notes[n % 12];
+    const octave = Math.floor(n / 12) - 1;
+    return name + octave;
+    }
+
+    function midiNoteToStaveNote(n) {
+        const notes = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
+    const name = notes[n % 12];
+    const octave = Math.floor(n / 12) - 1;
+
+        // check if note has accidental
+    const accidental = name.length;
+
+    // combine note name and octave
+    const keys = name[0] + "/" + octave;
+        if (accidental > 1) {
+
+            
+            return new StaveNote({ keys: [keys], duration: "w" }).addModifier(new Accidental("#"))
+        } else {
+
+            return new StaveNote({ keys: [keys], duration: "w" })
+        }
+    }
+
+
+    function randomInt(lowest, highest) {
+        let randomInt = Math.floor(Math.random() * (highest - lowest + 1));
+        return randomInt + lowest; 
+    }
+
+
+    function addRow(midiNote) {
+            // tbody（id="fretboard")を取得
+            const fretboard = document.getElementById("fretboard");
+            
+            // 新しい行（tr）を作成
+            const row = document.createElement("tr");
+            
+            // 左端のヘッダーセル（th）と、その中に入れるセレクトボックスを作成
+            const header = document.createElement("th");
+            header.textContent = midiNoteToName(midiNote);
+            
+            // ヘッダーセルをrowに追加
+            row.appendChild(header);
+
+            // tdを15個追加
+            for (let i=0; i <15; i++){
+                const cell = document.createElement("td");
+                cell.textContent = midiNoteToName(midiNote + i + 1); 
+                row.appendChild(cell);
+            }
+            const fretNum = document.getElementById("fretNum");
+            fretboard.removeChild(fretNum);
+            // rowをfretboardに追加
+            fretboard.appendChild(row);
+            fretboard.appendChild(fretNum);        
+        }
+
+        function updateVisibleCellsByList(note) {
+            const noteName = midiNoteToName(note);
+            const cells = document.querySelectorAll("td");
+            cells.forEach(cell => {
+            const content = cell.textContent.trim();
+                console.log(note);
+            if (noteName == content) {
+                cell.classList.add("visible");
+            } else {
+                cell.classList.remove("visible");
+            }
+        });
+        };
+        function startProgress() {
+            const fill = document.getElementById('fill');
+            const percent = document.getElementById('percent');
+            const duration = 3000; // 3秒
+            const start = performance.now();
+            fill.style.width = '0';
+
+            function update(now) {
+                const elapsed = now - start;
+                const ratio = Math.min(elapsed / duration, 1);
+                fill.style.width = (ratio * 100) + "%";
+                percent.textContent = Math.floor(ratio * 100) + "%";
+                if (ratio < 1) {
+                requestAnimationFrame(update);
+                } else {
+                percent.textContent = "100%";
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        function quiz() {
+            updateStave();
+            startProgress();
+            setTimeout(() => {
+                updateVisibleCellsByList(currentNote); // 1秒後に出力
+            }, 3000);
+        }
+
+        addRow(76)
+        addRow(71)
+        addRow(67)
+        addRow(62)
+        addRow(57)
+        addRow(52)
+
+    </script>
+    </body>
+    </html>
