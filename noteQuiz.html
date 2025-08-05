@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Note Quiz</title>
+    <!-- VexFlow v5 UMD CDN（グローバルで Vex 変数が使える） -->
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+
+    <style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;     /* 縦方向中央 */
+        align-items: center;         /* 横方向中央 */
+    }    
+    .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+    }
+    .piano {
+      position: relative;
+      width: 100%;
+      height: 150px;
+      margin: auto;
+      user-select: none;
+    }
+    .white-key {
+      width: 40px;
+      height: 150px;
+      background: white;
+      border: 1px solid #aaa;
+      display: inline-block;
+      position: relative;
+      z-index: 1;
+      margin-left: -4px;
+      box-sizing: border-box;
+      font-size: 18px;
+      color: #222;
+    }
+    .white-key-label {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      pointer-events: none;
+      font-weight: bold;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+    }
+    .white-key.correct {
+        background: green;
+    }
+    .white-key.wrong {
+        background: red;
+    }
+    .white-key:active {
+      background: #e0e0e0;
+    }
+    .black-key {
+      width: 28px;
+      height: 90px;
+      background: black;
+      border: 1px solid #333;
+      position: absolute;
+      top: 0;
+      z-index: 2;
+      margin-left: -14px;
+      border-radius: 0 0 4px 4px;
+      color: #fff;
+      font-size: 15px;
+    }
+    .black-key-label {
+      position: absolute;
+      bottom: 4px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      pointer-events: none;
+      color: #fff;
+      font-weight: bold;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 2px #000;
+    }
+    .black-key.correct {
+        background: green;
+    }
+    .black-key.wrong {
+        background: red;
+    }
+    .black-key:active {
+      background: #444;
+    }
+    .quizBtn {
+            width: 50px;
+            height: 30px;
+            margin: auto 20px;
+    }
+       /* 
+        body { 
+            background: #f9f9f9; 
+        }
+        
+        
+        button {
+            width: 50px;
+            height: 50px;
+            margin: auto 20px;
+        }
+        #vf { margin: 40px; }
+        header {
+            height: 80px;
+            
+            margin: auto;
+        }
+        table {
+            table-layout: fixed;
+            border-collapse: collapse;
+            min-height: 300px;
+            width: 80%;
+            margin: auto;
+            display: block;
+            text-align: center;
+            display: flex;
+        }
+        #fretboard {
+            margin: auto;
+        }
+        
+        .visible {
+            font-weight: bold;
+            opacity: 1;
+        }
+        th {
+            border: none;
+            border-right:double  black 3px;
+            padding: 0;
+            height: 20px;
+            width: 60px;
+        }
+        #fretNum td {
+            border: none;
+            opacity: 1;
+        }
+        form {
+            display: flex;
+        }
+        form label {
+            padding: 5px;
+        }
+        #bar {
+        width: 300px;
+        height: 24px;
+        background: #eee;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 20px auto;
+        border: 1px solid #aaa;
+        position: relative;
+        }
+        #fill {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #44c, #6cf);
+        transition: width 0s;
+        border-radius: 12px 0 0 12px;
+        }
+        #percent {
+        position: absolute;
+        left: 0; top: 0; width: 100%; height: 100%;
+        text-align: center; line-height: 24px; font-family: monospace;
+        font-size: 15px; color: #222;
+        pointer-events: none;
+        }
+        */
+    </style>
+    </head>
+
+
+    <body>
+    <div class="container">
+        <div id="output"></div>
+        <button class="quizBtn" onclick="quiz()">Button</button>
+    </div>
+      
+    
+    <div class="key">
+    <div class="piano" id="piano">
+    <!-- 白鍵 -->
+    <button class="white-key" data-note=60><span class="white-key-label">C</span></button>
+    <button class="white-key" data-note=62><span class="white-key-label">D</span></button>
+    <button class="white-key" data-note=64><span class="white-key-label">E</span></button>
+    <button class="white-key" data-note=65><span class="white-key-label">F</span></button>
+    <button class="white-key" data-note=67><span class="white-key-label">G</span></button>
+    <button class="white-key" data-note=69><span class="white-key-label">A</span></button>
+    <button class="white-key" data-note=71><span class="white-key-label">B</span></button>
+    <!-- 黒鍵（絶対配置） -->
+    <button class="black-key" data-note=61 style="left: 36px;">
+      <span class="black-key-label">C#<br>Db</span>
+    </button>
+    <button class="black-key" data-note=63 style="left: 78px;">
+      <span class="black-key-label">D#<br>Eb</span>
+    </button>
+    <button class="black-key" data-note=66 style="left: 162px;">
+      <span class="black-key-label">F#<br>Gb</span>
+    </button>
+    <button class="black-key" data-note=68 style="left: 204px;">
+      <span class="black-key-label">G#<br>Ab</span>
+    </button>
+    <button class="black-key" data-note=70 style="left: 246px;">
+      <span class="black-key-label">A#<br>Bb</span>
+    </button>
+    </div>
+    </div>
+    
+    <script>
+        const { Renderer, Stave, Accidental, StaveNote, Voice, Formatter } = Vex.Flow;
+
+        // piano keys
+        const allKeys = document.querySelectorAll('.white-key, .black-key'); 
+
+        let userAnswer;
+
+
+        // hold the current note (midi number)
+        let currentNote = 0;
+
+        // create SVG renderer and attach it to the div "output" while resetting it
+        const div = document.getElementById("output");
+        
+        const renderer = new Renderer(div, Renderer.Backends.SVG)
+        
+        // configure the rendering context
+        renderer.resize(200, 200);
+        const context = renderer.getContext();
+
+        // create a stave of w = 400 at x = 10, y = 40 on the canvas
+        const stave = new Stave(10, 40, 400);
+        stave.addClef("treble");
+        stave.setContext(context).draw();
+
+    function updateStave() {
+        // clear div
+        div.innerHTML = '';
+        const renderer = new Renderer(div, Renderer.Backends.SVG)
+        
+        // configure the rendering context
+        renderer.resize(200, 200);
+        const context = renderer.getContext();
+
+        // create a stave of w = 400 at x = 10, y = 40 on the canvas
+        const stave = new Stave(10, 40, 400);
+        stave.addClef("treble");
+        stave.setContext(context).draw();
+        
+        // pick random new note
+        let newNote;
+        do {
+            newNote = randomInt(52, 80);
+        } while (currentNote == newNote)
+        currentNote = newNote;
+        console.log(newNote);  
+        
+
+        // add note
+        const staveNote =  midiNoteToStaveNote(newNote);
+        const voice = new Voice({num_beats: 4, beat_value:4 });
+        voice.addTickable(staveNote);
+        new Formatter().joinVoices([voice]).format([voice], 350);
+
+        //render
+        voice.draw(context, stave);
+        }
+
+
+
+
+
+    // convert midi note number to StaveNote object
+    function midiNoteToStaveNote(n) {
+        const notes_sharp = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
+        const notes_flat = ["c", "db", "d", "eb", "e", "f", "gb", "g", "ab", "a", "bb", "b"];
+        
+        const chooseAccidental = Math.floor(Math.random() * 2);
+        let name;
+        if (chooseAccidental == 0) {
+            name = notes_sharp[n % 12];
+        } else {
+            name = notes_flat[n % 12];
+        }
+        console.log(name);
+        const octave = Math.floor(n / 12) - 1;
+
+        // combine note name and octave
+        const keys = name[0] + "/" + octave;
+        // check if name ends with # or b 
+        if (name.length > 1 && (name.endsWith("#") || name.endsWith("b"))) {
+            
+            // return StaveNote object w/ accidental
+            return new StaveNote({ keys: [keys], duration: "w" }).addModifier(new Accidental(name.slice(-1)))
+            
+        } else {
+
+            // return StaveNote object
+            return new StaveNote({ keys: [keys], duration: "w" })
+        }
+    }
+
+
+    function randomInt(lowest, highest) {
+        let randomInt = Math.floor(Math.random() * (highest - lowest + 1));
+        return randomInt + lowest; 
+    }
+
+
+
+    function startProgress() {
+            const fill = document.getElementById('fill');
+            const percent = document.getElementById('percent');
+            const duration = 3000; // 3秒
+            const start = performance.now();
+            fill.style.width = '0';
+
+            function update(now) {
+                const elapsed = now - start;
+                const ratio = Math.min(elapsed / duration, 1);
+                fill.style.width = (ratio * 100) + "%";
+                percent.textContent = Math.floor(ratio * 100) + "%";
+                if (ratio < 1) {
+                requestAnimationFrame(update);
+                } else {
+                percent.textContent = "100%";
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        function quiz() {
+            // すべての鍵盤からcorrect wrongクラスを外す
+            allKeys.forEach(k => k.classList.remove('correct'));
+            allKeys.forEach(k => k.classList.remove('wrong'));
+            updateStave();
+            startCountdown();
+        
+        }
+
+        
+        // keyboard setup and quiz  
+        allKeys.forEach(btn => {
+            btn.addEventListener('click', e => {
+            
+            
+            
+            const note = btn.dataset.note;
+            
+            
+            // クリックされた鍵盤にselectedクラスを付与
+            if (note % 12 === currentNote % 12) {
+                btn.classList.add('correct');
+            } else {
+                btn.classList.add('wrong');
+                allKeys.forEach(btn => {
+                    if (btn.dataset.note % 12 == currentNote %12) {
+                        btn.classList.add("correct");
+                    }
+                });
+            }
+            
+            ;
+            //playNote(note);
+            console.log(note % 12 === currentNote % 12, note);
+            console.log(currentNote)
+        });
+    });
+
+    </script>
+    </body>
+    </html>
